@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "/YPnnmktEG2BWUwdd0/WT5HZgCaMjvu2apiwVWG9TNF3/29pCztiGdRrSlXm7/17haDBP0uLFGFNSaLZM6sb1g==",
+  "success": true,
+  "projectFilePath": "D:\\D2GitSync\\D2RLAN-WPF\\src\\D2RLAN\\D2GitSync.Core\\D2GitSync.Core.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Galygious\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\7.0.1\\microsoft.extensions.logging.abstractions.7.0.1.nupkg.sha512",
+    "C:\\Users\\Galygious\\.nuget\\packages\\system.text.encodings.web\\7.0.0\\system.text.encodings.web.7.0.0.nupkg.sha512",
+    "C:\\Users\\Galygious\\.nuget\\packages\\system.text.json\\7.0.3\\system.text.json.7.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

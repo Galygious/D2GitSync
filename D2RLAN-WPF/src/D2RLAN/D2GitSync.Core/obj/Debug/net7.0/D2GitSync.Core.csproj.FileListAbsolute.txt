@@ -1,0 +1,12 @@
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.csproj.AssemblyReference.cache
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.AssemblyInfoInputs.cache
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.AssemblyInfo.cs
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.csproj.CoreCompileInputs.cache
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\bin\Debug\net7.0\D2GitSync.Core.deps.json
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\bin\Debug\net7.0\D2GitSync.Core.dll
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\bin\Debug\net7.0\D2GitSync.Core.pdb
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.dll
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\refint\D2GitSync.Core.dll
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\D2GitSync.Core.pdb
+D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\obj\Debug\net7.0\ref\D2GitSync.Core.dll

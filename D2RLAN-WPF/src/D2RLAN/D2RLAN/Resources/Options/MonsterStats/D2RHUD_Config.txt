@@ -1,0 +1,4 @@
+Transmute: NaN
+Sort Stash: NaN
+Sort Inventory: NaN
+Sort Cube: NaN
