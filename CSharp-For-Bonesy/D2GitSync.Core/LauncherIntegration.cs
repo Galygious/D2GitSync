@@ -99,7 +99,7 @@ namespace D2GitSync.Core
             _logger.LogInformation("D2R Save Sync integration initialized");
         }
 
-        public async Task OnGameStartingAsync(string savesPath, CancellationToken cancellationToken = default)
+        public async Task OnGameStartingAsync(CancellationToken cancellationToken = default)
         {
             if (_configuration?.AutoSyncEnabled != true)
             {
@@ -112,7 +112,7 @@ namespace D2GitSync.Core
             try
             {
                 // Update saves path from launcher
-                _configuration.SavesPath = savesPath;
+                _configuration.SavesPath = ShellViewModel.GetSavePath();
 
                 // Start the sync service
                 await _syncService.StartAsync(_configuration, cancellationToken);

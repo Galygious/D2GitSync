@@ -68,7 +68,7 @@ public class D2RLauncher
 // When user clicks "Launch D2R"
 public async Task LaunchGameAsync()
 {
-    var savesPath = GetCurrentSavesPath(); // You already have this
+    var savesPath = ShellViewModel.GetSavePath(); // You already have this
     
     // Start sync service
     await _syncIntegration.OnGameStartingAsync(savesPath);
