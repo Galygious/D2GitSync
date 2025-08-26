@@ -1,29 +1,35 @@
-# D2R Git Save Sync System
+# D2GitSync
 
-This directory contains all the components for the Diablo 2 Resurrected save file synchronization system.
+**Automatic save file synchronization for Diablo 2 Resurrected**
+
+D2GitSync automatically backs up and synchronizes your Diablo 2 Resurrected save files using Git, allowing you to:
+- 🔄 **Never lose progress** - Real-time backup of all save changes
+- 🖥️ **Play across multiple PCs** - Seamlessly continue on any computer
+- 📖 **Track save history** - Complete version history of your characters
+- 🎮 **Support all mods** - Works with modded saves and subdirectories
+- ⚡ **Zero maintenance** - Automatic operation while you play
 
 ## Files
 
-- **`D2RLaunch.bat`** - Main launcher that handles git sync and starts D2R
+- **`D2GitSync.bat`** - Main launcher that handles git sync and starts D2R
 - **`D2SaveWatcher.ps1`** - PowerShell service that monitors save file changes
-- **`InstallService.bat`** - Installs the file watcher as a Windows service
-- **`ServiceManager.bat`** - GUI tool to manage the Windows service
-- **`TestWatcher.ps1`** - Test script to validate functionality
-- **`SETUP_GUIDE.md`** - Complete setup and configuration guide
+- **`README.md`** - This file with quick start guide
+- **`SETUP_GUIDE.md`** - Complete setup and configuration guide  
+- **`RELEASE_NOTES.md`** - Version history and release information
 
 ## Quick Start
 
-1. **First Time Setup**: Run `D2RLaunch.bat` to initialize git repository
+1. **First Time Setup**: Run `D2GitSync.bat` to initialize git repository
 2. **Configure Remote**: Set up your GitHub/GitLab repository for sync
-3. **Daily Use**: Run `D2RLaunch.bat` to play with automatic save sync
+3. **Daily Use**: Run `D2GitSync.bat` to play with automatic save sync
 
 ## Configuration
 
-Update these paths in `D2RLaunch.bat` if needed:
+Update these paths in `D2GitSync.bat` if needed:
 ```batch
 set "SAVES_PATH=C:\Users\%USERNAME%\Saved Games\Diablo II Resurrected"
 set "GIT_REPO_PATH=D:\D2RSaves"
-set "LAUNCHER_PATH=D:\D2RLaunch\D2RLAN\Launcher\D2RLAN.exe"
+set "LAUNCHER_PATH=D2R.exe"
 ```
 
 ## Features
@@ -36,14 +42,9 @@ set "LAUNCHER_PATH=D:\D2RLaunch\D2RLAN\Launcher\D2RLAN.exe"
 
 ## Usage Options
 
-**Option 1: Manual Launch (Recommended)**
-- Run `D2RLaunch.bat` when playing
+**Manual Launch**
+- Run `D2GitSync.bat` when playing
 - File watcher runs in background
 - Close window when done to stop monitoring
-
-**Option 2: Windows Service (Advanced)**
-- Run `InstallService.bat` to install as service
-- Always monitoring, starts with Windows
-- Use `ServiceManager.bat` to control
 
 For detailed setup instructions, see `SETUP_GUIDE.md`.
