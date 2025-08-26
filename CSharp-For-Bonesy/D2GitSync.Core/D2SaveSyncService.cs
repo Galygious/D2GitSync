@@ -189,9 +189,12 @@ namespace D2GitSync.Core
             if (!System.IO.Directory.Exists(_config.SavesPath))
                 throw new System.IO.DirectoryNotFoundException($"Saves directory not found: {_config.SavesPath}");
 
-            // Validate git is available
-            if (!await _gitService.IsGitAvailableAsync(cancellationToken))
-                throw new InvalidOperationException("Git is not installed or not available in PATH");
+            // Ensure Git is available, install if needed
+            var dependencyInstaller = new DependencyInstaller(_logger);
+            if (!await dependencyInstaller.EnsureGitInstalledAsync(cancellationToken))
+            {
+                throw new InvalidOperationException("Git is required but could not be installed automatically. Please install Git for Windows manually from https://git-scm.com/download/win");
+            }
         }
 
         private async void OnFileChanged(object sender, FileChangedEventArgs e)

@@ -165,8 +165,31 @@ public class SyncConfiguration
 ## 🚨 Requirements
 
 - .NET 6.0+ (you're probably already using this)
-- Git installed on user's system (same as original)
+- Git for Windows (automatically installed if missing!)
 - Standard D2R saves directory access
+
+### 🎯 Automatic Dependency Installation
+
+**No more "user doesn't have Git" problems!** The C# version can automatically install Git using winget:
+
+```csharp
+// Check what's missing
+var status = await integration.CheckDependenciesAsync();
+Console.WriteLine($"Git available: {status.IsGitAvailable}");
+Console.WriteLine($"Can auto-install: {status.CanAutoInstall}");
+
+// Install automatically  
+if (!status.HasAllRequiredDependencies && status.CanAutoInstall)
+{
+    await integration.InstallDependenciesAsync();
+}
+```
+
+**What gets installed automatically:**
+- ✅ **Git for Windows** - Required for all Git operations
+- ✅ **GitHub CLI** - Optional, for enhanced GitHub integration
+
+**Fallback:** If winget isn't available, provides clear manual installation instructions.
 
 ## 🤝 What I've Made Easy for You
 

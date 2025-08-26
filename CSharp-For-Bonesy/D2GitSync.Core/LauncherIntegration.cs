@@ -188,6 +188,37 @@ namespace D2GitSync.Core
         }
 
         /// <summary>
+        /// Checks the status of required dependencies.
+        /// Bonesy can use this to show dependency status in the launcher UI.
+        /// </summary>
+        public async Task<DependencyStatus> CheckDependenciesAsync(CancellationToken cancellationToken = default)
+        {
+            var dependencyInstaller = new DependencyInstaller(_logger);
+            return await dependencyInstaller.GetDependencyStatusAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Installs missing dependencies automatically.
+        /// Bonesy can call this when user clicks "Install Dependencies" button.
+        /// </summary>
+        public async Task<bool> InstallDependenciesAsync(bool includeOptional = false, CancellationToken cancellationToken = default)
+        {
+            var dependencyInstaller = new DependencyInstaller(_logger);
+            
+            // Install Git (required)
+            var gitInstalled = await dependencyInstaller.EnsureGitInstalledAsync(cancellationToken);
+            
+            // Install GitHub CLI (optional)
+            var ghInstalled = true;
+            if (includeOptional)
+            {
+                ghInstalled = await dependencyInstaller.EnsureGitHubCliInstalledAsync(cancellationToken);
+            }
+
+            return gitInstalled && (ghInstalled || !includeOptional);
+        }
+
+        /// <summary>
         /// This method would be adapted to load from the launcher's settings system.
         /// For example, if D2RLAN uses JSON config files, XML, registry, etc.
         /// </summary>
@@ -244,6 +275,35 @@ namespace D2GitSync.Core
 
             _syncService?.Dispose();
             _disposed = true;
+        }
+    }
+
+    /// <summary>
+    /// UI-friendly helper for dependency status display.
+    /// Bonesy can use this for status indicators in the launcher.
+    /// </summary>
+    public class DependencyStatusDisplay
+    {
+        public string GitStatus { get; set; }
+        public string GitHubCliStatus { get; set; }
+        public string WingetStatus { get; set; }
+        public string OverallStatus { get; set; }
+        public bool CanInstallMissing { get; set; }
+        public bool ShowInstallButton { get; set; }
+        public string[] InstallButtonText { get; set; }
+
+        public static DependencyStatusDisplay FromStatus(DependencyStatus status)
+        {
+            return new DependencyStatusDisplay
+            {
+                GitStatus = status.IsGitAvailable ? "✓ Installed" : "✗ Missing",
+                GitHubCliStatus = status.IsGitHubCliAvailable ? "✓ Installed" : "✗ Missing (Optional)",
+                WingetStatus = status.IsWingetAvailable ? "✓ Available" : "✗ Not Available",
+                OverallStatus = status.GetStatusMessage(),
+                CanInstallMissing = status.CanAutoInstall,
+                ShowInstallButton = !status.HasAllRequiredDependencies && status.CanAutoInstall,
+                InstallButtonText = status.GetInstallationInstructions()
+            };
         }
     }
 

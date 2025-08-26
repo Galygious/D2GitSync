@@ -56,7 +56,10 @@ namespace D2GitSync.Demo
 
         private static async Task SimulateLauncherFlow()
         {
-            Console.WriteLine("1. Initializing launcher integration...");
+            Console.WriteLine("1. Checking dependencies...");
+            await CheckAndInstallDependencies();
+
+            Console.WriteLine("2. Initializing launcher integration...");
             await _integration.InitializeAsync(_cancellationTokenSource.Token);
 
             // Get current configuration
@@ -78,7 +81,7 @@ namespace D2GitSync.Demo
                 return;
             }
 
-            Console.WriteLine("2. Simulating game start...");
+            Console.WriteLine("3. Simulating game start...");
             
             // Simulate game starting (this is where D2RLAN would hook in)
             await _integration.OnGameStartingAsync(config.SavesPath, _cancellationTokenSource.Token);
@@ -96,8 +99,79 @@ namespace D2GitSync.Demo
             // Interactive loop
             await InteractiveLoop();
 
-            Console.WriteLine("3. Simulating game end...");
+            Console.WriteLine("4. Simulating game end...");
             await _integration.OnGameEndedAsync(_cancellationTokenSource.Token);
+        }
+
+        private static async Task CheckAndInstallDependencies()
+        {
+            try
+            {
+                Console.WriteLine("Checking dependency status...");
+                var status = await _integration.CheckDependenciesAsync(_cancellationTokenSource.Token);
+
+                Console.WriteLine($"Dependency Status:");
+                Console.WriteLine($"  Git: {(status.IsGitAvailable ? "✓ Available" : "✗ Missing")}");
+                Console.WriteLine($"  GitHub CLI: {(status.IsGitHubCliAvailable ? "✓ Available" : "✗ Missing (optional)")}");
+                Console.WriteLine($"  Winget: {(status.IsWingetAvailable ? "✓ Available" : "✗ Missing")}");
+                Console.WriteLine($"  Status: {status.GetStatusMessage()}");
+                Console.WriteLine();
+
+                if (!status.HasAllRequiredDependencies)
+                {
+                    if (status.CanAutoInstall)
+                    {
+                        Console.WriteLine("Missing dependencies detected. Installing automatically...");
+                        Console.WriteLine("This may take a few moments and may require administrator privileges.");
+                        Console.WriteLine();
+
+                        var success = await _integration.InstallDependenciesAsync(includeOptional: false, _cancellationTokenSource.Token);
+                        
+                        if (success)
+                        {
+                            Console.WriteLine("✓ Dependencies installed successfully!");
+                        }
+                        else
+                        {
+                            Console.WriteLine("⚠ Some dependencies could not be installed automatically.");
+                            Console.WriteLine("You may need to restart your computer or refresh your PATH environment variable.");
+                            
+                            var instructions = status.GetInstallationInstructions();
+                            foreach (var instruction in instructions)
+                            {
+                                Console.WriteLine($"  • {instruction}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ Required dependencies are missing and cannot be installed automatically.");
+                        Console.WriteLine("Please install them manually:");
+                        
+                        var instructions = status.GetInstallationInstructions();
+                        foreach (var instruction in instructions)
+                        {
+                            Console.WriteLine($"  • {instruction}");
+                        }
+                        
+                        Console.WriteLine();
+                        Console.WriteLine("Press any key to continue anyway (may cause errors)...");
+                        Console.ReadKey();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("✓ All required dependencies are available!");
+                }
+
+                Console.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"⚠ Error checking dependencies: {ex.Message}");
+                Console.WriteLine("Continuing anyway...");
+                Console.WriteLine();
+            }
         }
 
         private static async Task ConfigureSettings(SyncConfiguration config)
