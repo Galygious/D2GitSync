@@ -92,8 +92,8 @@ namespace D2GitSync.Core
                     return;
                 }
 
-                // Pull changes
-                var pullResult = await RunGitCommandAsync("pull origin main", repoPath, cancellationToken);
+                // Pull changes with merge strategy that favors local changes
+                var pullResult = await RunGitCommandAsync("pull origin main --strategy-option=ours", repoPath, cancellationToken);
                 if (pullResult.ExitCode == 0)
                 {
                     _logger.LogInformation("Successfully pulled changes from remote repository");
@@ -101,6 +101,16 @@ namespace D2GitSync.Core
                 else
                 {
                     _logger.LogWarning("Pull failed: {Error}", pullResult.StandardError);
+                    // If standard pull fails, try with rebase to preserve local commits
+                    var rebasePullResult = await RunGitCommandAsync("pull --rebase origin main", repoPath, cancellationToken);
+                    if (rebasePullResult.ExitCode == 0)
+                    {
+                        _logger.LogInformation("Successfully pulled changes using rebase strategy");
+                    }
+                    else
+                    {
+                        _logger.LogError("Both pull strategies failed. Manual intervention may be required.");
+                    }
                 }
             }
             catch (Exception ex)

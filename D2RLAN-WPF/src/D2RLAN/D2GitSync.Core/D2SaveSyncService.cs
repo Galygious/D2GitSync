@@ -59,13 +59,7 @@ namespace D2GitSync.Core
                 // Step 2: Initialize Git repository
                 await _gitService.InitializeRepositoryAsync(_config.GitRepositoryPath, cancellationToken);
                 
-                // Step 3: Pull latest changes from remote
-                if (!string.IsNullOrEmpty(_config.RemoteRepositoryUrl))
-                {
-                    await _gitService.PullFromRemoteAsync(_config.GitRepositoryPath, cancellationToken);
-                }
-                
-                // Step 4: Set up symlinks (this is the magic!)
+                // Step 2.5: Set up symlinks FIRST to preserve local files (this is the magic!)
                 var effectiveRepoPath = _config.GetModRepositoryPath();
                 var scopedSavePaths = _config.GetScopedSavePaths();
                 
@@ -74,7 +68,46 @@ namespace D2GitSync.Core
                 
                 await _symlinkManager.CreateScopedSymlinksAsync(scopedSavePaths, effectiveRepoPath, _config.CurrentModName, cancellationToken);
                 
-                // Step 5: Start file monitoring for all scoped paths
+                // Step 2.6: Commit any local changes before pulling from remote
+                // This ensures local save files are preserved and not lost during pull
+                bool hasLocalChanges;
+                if (_config.EnableModScoping && !string.IsNullOrEmpty(_config.CurrentModName))
+                {
+                    var repoScopedPaths = scopedSavePaths.Select(p => 
+                        Path.Combine(effectiveRepoPath, Path.GetFileName(p))).ToArray();
+                    hasLocalChanges = await _gitService.HasUncommittedChangesInScopeAsync(_config.GitRepositoryPath, repoScopedPaths, cancellationToken);
+                }
+                else
+                {
+                    hasLocalChanges = await _gitService.HasUncommittedChangesAsync(_config.GitRepositoryPath, cancellationToken);
+                }
+                
+                if (hasLocalChanges)
+                {
+                    var modContext = _config.EnableModScoping ? $" [{_config.CurrentModName}]" : "";
+                    var commitMessage = $"Pre-sync commit{modContext}: Preserve local save files from {Environment.MachineName} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                    
+                    if (_config.EnableModScoping && !string.IsNullOrEmpty(_config.CurrentModName))
+                    {
+                        var repoScopedPaths = scopedSavePaths.Select(p => 
+                            Path.Combine(effectiveRepoPath, Path.GetFileName(p))).ToArray();
+                        await _gitService.CommitScopedChangesAsync(_config.GitRepositoryPath, commitMessage, repoScopedPaths, cancellationToken);
+                    }
+                    else
+                    {
+                        await _gitService.CommitChangesAsync(_config.GitRepositoryPath, commitMessage, cancellationToken);
+                    }
+                    
+                    _logger.LogInformation("Committed local changes before sync to preserve save files");
+                }
+                
+                // Step 3: Pull latest changes from remote (now safe - local changes are committed)
+                if (!string.IsNullOrEmpty(_config.RemoteRepositoryUrl))
+                {
+                    await _gitService.PullFromRemoteAsync(_config.GitRepositoryPath, cancellationToken);
+                }
+                
+                // Step 4: Start file monitoring for all scoped paths
                 foreach (var savePath in scopedSavePaths)
                 {
                     await _fileWatcher.StartAsync(savePath, _config.DebounceSeconds, cancellationToken);
