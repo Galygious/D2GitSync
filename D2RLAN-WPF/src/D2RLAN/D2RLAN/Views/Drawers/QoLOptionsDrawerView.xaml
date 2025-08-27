@@ -56,7 +56,6 @@
                             <ToggleButton
                                 Width="150"
                                 Height="40"
-                                cm:Message.Attach="[Event Click] = [Action OnPreviewFont];"
                                 Background="MidnightBlue"
                                 Content="Preview"
                                 IsChecked="{Binding ShowFontPreview}"
