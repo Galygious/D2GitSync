@@ -28,6 +28,7 @@ public class QoLOptionsDrawerViewModel : INotifyPropertyChanged
 {
     #region ---Static Members---
 
+
     private IWindowManager _windowManager;
     private bool _showFontPreview;
     private ImageSource _fontImage;
@@ -1173,13 +1174,14 @@ public class QoLOptionsDrawerViewModel : INotifyPropertyChanged
         {
             var config = new SyncConfiguration
             {
-                SavesPath = GetSavesPath(),
+                SavesPath = ShellViewModel.GetSavePath(),
                 GitRepositoryPath = D2GitSyncLocalPath,
                 RemoteRepositoryUrl = D2GitSyncRepositoryUrl,
-                AutoSyncEnabled = D2GitSyncEnabled,
+                D2GitSyncEnabled = D2GitSyncEnabled,
                 DebounceSeconds = 3,
                 GitUserName = D2GitSyncUserName,
-                GitUserEmail = D2GitSyncUserEmail
+                GitUserEmail = D2GitSyncUserEmail,
+                CurrentModName = ShellViewModel.ModInfo.SavePath
             };
 
             // Save configuration to file
@@ -1353,18 +1355,12 @@ public class QoLOptionsDrawerViewModel : INotifyPropertyChanged
                 
                 if (config != null)
                 {
+                    D2GitSyncEnabled = config.D2GitSyncEnabled;
                     D2GitSyncRepositoryUrl = config.RemoteRepositoryUrl ?? "";
                     D2GitSyncLocalPath = config.GitRepositoryPath ?? "";
-                    D2GitSyncUserName = Environment.UserName;
-                    D2GitSyncUserEmail = $"{Environment.UserName}@{Environment.MachineName}.local";
+                    D2GitSyncUserName = config.GitUserName ?? "";
+                    D2GitSyncUserEmail = config.GitUserEmail ?? "";
                 }
-            }
-            else
-            {
-                // Set defaults
-                D2GitSyncUserName = Environment.UserName;
-                D2GitSyncUserEmail = $"{Environment.UserName}@{Environment.MachineName}.local";
-                D2GitSyncLocalPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "D2GitSync");
             }
         }
         catch (Exception ex)
@@ -1381,22 +1377,6 @@ public class QoLOptionsDrawerViewModel : INotifyPropertyChanged
             WriteIndented = true 
         });
         await File.WriteAllTextAsync(configPath, json);
-    }
-
-    private string GetSavesPath()
-    {
-        // Try to get saves path from D2R installation
-        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var defaultSavesPath = Path.Combine(userProfile, "Saved Games", "Diablo II Resurrected");
-        
-        if (Directory.Exists(defaultSavesPath))
-        {
-            return defaultSavesPath;
-        }
-        
-        // Fallback to Documents
-        var documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        return Path.Combine(documentsPath, "Diablo II Resurrected");
     }
 
     #endregion
