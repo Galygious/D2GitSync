@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -29,7 +31,7 @@ namespace D2GitSync.Core
         /// <summary>
         /// Whether auto-sync is enabled. This would be a checkbox in the launcher.
         /// </summary>
-        public bool AutoSyncEnabled { get; set; } = true;
+        public bool D2GitSyncEnabled { get; set; } = true;
 
         /// <summary>
         /// How long to wait after file changes before syncing (seconds).
@@ -52,6 +54,63 @@ namespace D2GitSync.Core
         public string GitUserEmail { get; set; } = $"{Environment.UserName}@{Environment.MachineName}.local";
 
         /// <summary>
+        /// Current mod name for scoped syncing. Only files related to this mod will be synced.
+        /// </summary>
+        public string CurrentModName { get; set; }
+
+        /// <summary>
+        /// Whether to scope syncing to only the current mod. If false, syncs entire saves directory.
+        /// </summary>
+        public bool EnableModScoping { get; set; } = true;
+
+        /// <summary>
+        /// Subdirectory patterns within the git repo to sync for each mod.
+        /// Key is mod name, value is array of subdirectory patterns.
+        /// </summary>
+        public Dictionary<string, string[]> ModScopePaths { get; set; } = new Dictionary<string, string[]>();
+
+        /// <summary>
+        /// Gets the effective save paths for the current mod scope.
+        /// </summary>
+        public string[] GetScopedSavePaths()
+        {
+            if (!EnableModScoping || string.IsNullOrEmpty(CurrentModName))
+            {
+                return new[] { SavesPath };
+            }
+
+            var paths = new List<string>();
+            
+            // Main mod saves path
+            var modSavePath = Path.Combine(SavesPath, "Mods", CurrentModName);
+            if (Directory.Exists(modSavePath))
+            {
+                paths.Add(modSavePath);
+            }
+
+            // Check if mod uses retail location (some mods don't create mod-specific folders)
+            if (paths.Count == 0 && Directory.Exists(SavesPath))
+            {
+                paths.Add(SavesPath);
+            }
+
+            return paths.ToArray();
+        }
+
+        /// <summary>
+        /// Gets the git repository subdirectory for the current mod.
+        /// </summary>
+        public string GetModRepositoryPath()
+        {
+            if (!EnableModScoping || string.IsNullOrEmpty(CurrentModName))
+            {
+                return GitRepositoryPath;
+            }
+
+            return Path.Combine(GitRepositoryPath, "mods", CurrentModName);
+        }
+
+        /// <summary>
         /// Creates a default configuration with sensible defaults.
         /// The launcher would call this and then override with user preferences.
         /// </summary>
@@ -65,7 +124,7 @@ namespace D2GitSync.Core
             {
                 SavesPath = defaultSavesPath,
                 GitRepositoryPath = defaultGitPath,
-                AutoSyncEnabled = true,
+                D2GitSyncEnabled = true,
                 DebounceSeconds = 3
             };
         }
@@ -86,6 +145,9 @@ namespace D2GitSync.Core
 
             if (FilePatterns == null || FilePatterns.Length == 0)
                 throw new ArgumentException("FilePatterns cannot be empty");
+
+            if (EnableModScoping && string.IsNullOrWhiteSpace(CurrentModName))
+                throw new ArgumentException("CurrentModName cannot be empty when mod scoping is enabled");
         }
 
         /// <summary>

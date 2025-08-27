@@ -47,6 +47,44 @@ namespace D2GitSync.Core
         }
 
         /// <summary>
+        /// Creates scoped symlinks for specific mod paths only.
+        /// This limits syncing to only the current mod's save files.
+        /// </summary>
+        public async Task CreateScopedSymlinksAsync(string[] scopedSavePaths, string gitRepoPath, string modName, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Setting up scoped symlinks for mod {ModName} from paths: {ScopedPaths}", modName, string.Join(", ", scopedSavePaths));
+
+            // Ensure git repository directory exists
+            Directory.CreateDirectory(gitRepoPath);
+
+            foreach (var savePath in scopedSavePaths)
+            {
+                if (!Directory.Exists(savePath))
+                {
+                    _logger.LogWarning("Scoped save path does not exist: {SavePath}", savePath);
+                    continue;
+                }
+
+                // For each scoped path, create a subdirectory in the git repo
+                var saveDirName = Path.GetFileName(savePath);
+                var gitTargetPath = Path.Combine(gitRepoPath, saveDirName);
+                Directory.CreateDirectory(gitTargetPath);
+
+                // Get all subdirectories in this scoped path
+                var directories = Directory.GetDirectories(savePath, "*", SearchOption.AllDirectories);
+                var allDirs = new List<string> { savePath };
+                allDirs.AddRange(directories);
+
+                foreach (var dir in allDirs)
+                {
+                    await ProcessScopedDirectoryAsync(dir, savePath, gitTargetPath, modName, cancellationToken);
+                }
+            }
+
+            _logger.LogInformation("Scoped symlink setup completed for mod {ModName}", modName);
+        }
+
+        /// <summary>
         /// Removes all symlinks and restores original file structure.
         /// This should be called when disabling sync to restore normal operation.
         /// </summary>
@@ -92,6 +130,52 @@ namespace D2GitSync.Core
                     await ProcessFileAsync(file, currentDir, gitTargetDir, cancellationToken);
                 }
             }
+        }
+
+        private async Task ProcessScopedDirectoryAsync(string currentDir, string baseSavePath, string gitTargetPath, string modName, CancellationToken cancellationToken)
+        {
+            // Calculate relative path for this directory within the scoped path
+            var relativePath = Path.GetRelativePath(baseSavePath, currentDir);
+            var gitTargetDir = relativePath == "." ? gitTargetPath : Path.Combine(gitTargetPath, relativePath);
+
+            // Ensure target directory exists in git repo
+            Directory.CreateDirectory(gitTargetDir);
+
+            // Process all save files in this directory with mod-specific filtering
+            var saveFilePatterns = new[] { "*.d2s", "*.ma*", "*.d2i", "*.key" };
+            
+            foreach (var pattern in saveFilePatterns)
+            {
+                var files = Directory.GetFiles(currentDir, pattern, SearchOption.TopDirectoryOnly);
+                
+                foreach (var file in files)
+                {
+                    // Apply mod-specific filtering if needed
+                    if (ShouldSyncFileForMod(file, modName))
+                    {
+                        await ProcessFileAsync(file, currentDir, gitTargetDir, cancellationToken);
+                    }
+                }
+            }
+        }
+
+        private bool ShouldSyncFileForMod(string filePath, string modName)
+        {
+            // For now, sync all save files found in the scoped paths
+            // Could be extended to filter based on specific mod requirements
+            // For example, some mods might have specific file naming conventions
+            
+            var fileName = Path.GetFileName(filePath);
+            
+            // Skip temporary files
+            if (fileName.EndsWith(".tmp") || fileName.EndsWith(".bak"))
+                return false;
+                
+            // Skip system files
+            if (fileName.StartsWith("."))
+                return false;
+                
+            return true;
         }
 
         private async Task ProcessFileAsync(string filePath, string savesDir, string gitTargetDir, CancellationToken cancellationToken)

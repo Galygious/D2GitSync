@@ -29,6 +29,12 @@ namespace D2GitSync.Core
         Task OnGameStartingAsync(string savesPath, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Called when the launcher is about to start D2R with specific mod context.
+        /// This overload includes mod information for scoped syncing.
+        /// </summary>
+        Task OnGameStartingAsync(string savesPath, string modName, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Called when D2R game process has ended.
         /// This is where the sync service would perform final sync and stop.
         /// </summary>
@@ -117,7 +123,7 @@ namespace D2GitSync.Core
 
         public async Task OnGameStartingAsync(string savesPath, CancellationToken cancellationToken = default)
         {
-            if (_configuration?.AutoSyncEnabled != true)
+            if (_configuration?.D2GitSyncEnabled != true)
             {
                 _logger.LogDebug("Auto-sync is disabled, skipping sync service startup");
                 return;
@@ -142,9 +148,42 @@ namespace D2GitSync.Core
             }
         }
 
+        /// <summary>
+        /// Called when the launcher is about to start D2R with specific mod context.
+        /// This overload includes mod information for scoped syncing.
+        /// </summary>
+        public async Task OnGameStartingAsync(string savesPath, string modName, CancellationToken cancellationToken = default)
+        {
+            if (_configuration?.D2GitSyncEnabled != true)
+            {
+                _logger.LogDebug("Auto-sync is disabled, skipping sync service startup");
+                return;
+            }
+
+            _logger.LogInformation("Game starting with mod {ModName}, initializing save sync for: {SavesPath}", modName, savesPath);
+
+            try
+            {
+                // Update configuration with mod context
+                _configuration.SavesPath = savesPath;
+                _configuration.CurrentModName = modName;
+                _configuration.EnableModScoping = !string.IsNullOrEmpty(modName);
+
+                // Start the sync service with mod-specific configuration
+                await _syncService.StartAsync(_configuration, cancellationToken);
+
+                _logger.LogInformation("Save sync service started successfully for mod {ModName}", modName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start save sync service for mod {ModName}", modName);
+                // Don't throw - we don't want to prevent the game from starting
+            }
+        }
+
         public async Task OnGameEndedAsync(CancellationToken cancellationToken = default)
         {
-            if (_configuration?.AutoSyncEnabled != true)
+            if (_configuration?.D2GitSyncEnabled != true)
                 return;
 
             _logger.LogInformation("Game ended, stopping save sync service");

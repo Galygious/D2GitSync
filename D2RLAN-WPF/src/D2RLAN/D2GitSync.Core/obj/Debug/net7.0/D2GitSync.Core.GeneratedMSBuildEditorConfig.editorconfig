@@ -8,4 +8,4 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = D2GitSync.Core
-build_property.ProjectDir = D:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\
+build_property.ProjectDir = d:\D2GitSync\D2RLAN-WPF\src\D2RLAN\D2GitSync.Core\

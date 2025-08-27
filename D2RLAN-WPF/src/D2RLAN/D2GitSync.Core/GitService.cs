@@ -183,6 +183,75 @@ namespace D2GitSync.Core
         }
 
         /// <summary>
+        /// Commits changes only for specific paths/patterns within the repository.
+        /// </summary>
+        public async Task CommitScopedChangesAsync(string repoPath, string commitMessage, string[] scopedPaths, CancellationToken cancellationToken = default)
+        {
+            _logger.LogDebug("Committing scoped changes with message: {CommitMessage}, paths: {ScopedPaths}", commitMessage, string.Join(", ", scopedPaths));
+
+            // Add only the scoped paths
+            foreach (var path in scopedPaths)
+            {
+                var relativePath = Path.GetRelativePath(repoPath, path);
+                if (relativePath.StartsWith(".."))
+                {
+                    _logger.LogWarning("Path {Path} is outside repository {RepoPath}, skipping", path, repoPath);
+                    continue;
+                }
+
+                var addResult = await RunGitCommandAsync($"add \"{relativePath}\"", repoPath, cancellationToken);
+                if (addResult.ExitCode != 0)
+                {
+                    _logger.LogWarning("Failed to add path {Path}: {Error}", relativePath, addResult.StandardError);
+                }
+            }
+
+            // Commit changes
+            var commitResult = await RunGitCommandAsync($"commit -m \"{commitMessage}\"", repoPath, cancellationToken);
+            if (commitResult.ExitCode != 0)
+            {
+                // Check if it's just "nothing to commit"
+                if (commitResult.StandardOutput.Contains("nothing to commit"))
+                {
+                    _logger.LogDebug("No changes to commit for scoped paths");
+                    return;
+                }
+                throw new InvalidOperationException($"Failed to commit scoped changes: {commitResult.StandardError}");
+            }
+
+            _logger.LogInformation("Scoped changes committed successfully");
+        }
+
+        /// <summary>
+        /// Checks if there are uncommitted changes in specific paths within the repository.
+        /// </summary>
+        public async Task<bool> HasUncommittedChangesInScopeAsync(string repoPath, string[] scopedPaths, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                foreach (var path in scopedPaths)
+                {
+                    var relativePath = Path.GetRelativePath(repoPath, path);
+                    if (relativePath.StartsWith(".."))
+                    {
+                        continue; // Skip paths outside repository
+                    }
+
+                    var result = await RunGitCommandAsync($"status --porcelain \"{relativePath}\"", repoPath, cancellationToken);
+                    if (!string.IsNullOrWhiteSpace(result.StandardOutput))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets the timestamp of the last commit.
         /// </summary>
         public DateTime? GetLastCommitTime(string repoPath)

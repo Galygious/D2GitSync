@@ -6,7 +6,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 Write-Host 'Building D2RLAN...' -ForegroundColor Green
 
 # Paths
-$projDir = Join-Path $PSScriptRoot '..\D2RLAN-Fresh\src\D2RLAN\D2RLAN'
+$projDir = Join-Path $PSScriptRoot '..\D2RLAN-WPF\src\D2RLAN\D2RLAN'
 $source  = Join-Path $projDir 'bin\Debug\net7.0-windows'
 $target  = 'D:\D2RLaunch\D2RLAN\net7.0-windows'
 

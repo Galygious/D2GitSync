@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -64,10 +66,19 @@ namespace D2GitSync.Core
                 }
                 
                 // Step 4: Set up symlinks (this is the magic!)
-                await _symlinkManager.CreateSymlinksAsync(_config.SavesPath, _config.GitRepositoryPath, cancellationToken);
+                var effectiveRepoPath = _config.GetModRepositoryPath();
+                var scopedSavePaths = _config.GetScopedSavePaths();
                 
-                // Step 5: Start file monitoring
-                await _fileWatcher.StartAsync(_config.SavesPath, _config.DebounceSeconds, cancellationToken);
+                // Create mod-specific directory structure in git repo if needed
+                Directory.CreateDirectory(effectiveRepoPath);
+                
+                await _symlinkManager.CreateScopedSymlinksAsync(scopedSavePaths, effectiveRepoPath, _config.CurrentModName, cancellationToken);
+                
+                // Step 5: Start file monitoring for all scoped paths
+                foreach (var savePath in scopedSavePaths)
+                {
+                    await _fileWatcher.StartAsync(savePath, _config.DebounceSeconds, cancellationToken);
+                }
                 
                 _isRunning = true;
                 OnStatusChanged(SyncStatus.Running, "Sync service is active");
@@ -127,14 +138,41 @@ namespace D2GitSync.Core
                 _logger.LogDebug("Starting manual sync operation");
                 OnStatusChanged(SyncStatus.Syncing, "Syncing saves...");
 
-                // Since we're using symlinks, the files are already in the git repo
-                // We just need to commit and push any changes
-                var hasChanges = await _gitService.HasUncommittedChangesAsync(_config.GitRepositoryPath, cancellationToken);
+                var effectiveRepoPath = _config.GetModRepositoryPath();
+                bool hasChanges;
+
+                // Check for changes - either scoped or global based on configuration
+                if (_config.EnableModScoping && !string.IsNullOrEmpty(_config.CurrentModName))
+                {
+                    var scopedPaths = _config.GetScopedSavePaths();
+                    var repoScopedPaths = scopedPaths.Select(p => 
+                        Path.Combine(effectiveRepoPath, Path.GetFileName(p))).ToArray();
+                    
+                    hasChanges = await _gitService.HasUncommittedChangesInScopeAsync(_config.GitRepositoryPath, repoScopedPaths, cancellationToken);
+                }
+                else
+                {
+                    hasChanges = await _gitService.HasUncommittedChangesAsync(_config.GitRepositoryPath, cancellationToken);
+                }
                 
                 if (hasChanges)
                 {
-                    var commitMessage = $"Auto-sync: Save files updated on {Environment.MachineName} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
-                    await _gitService.CommitChangesAsync(_config.GitRepositoryPath, commitMessage, cancellationToken);
+                    var modContext = _config.EnableModScoping ? $" [{_config.CurrentModName}]" : "";
+                    var commitMessage = $"Auto-sync{modContext}: Save files updated on {Environment.MachineName} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                    
+                    // Commit changes - either scoped or global
+                    if (_config.EnableModScoping && !string.IsNullOrEmpty(_config.CurrentModName))
+                    {
+                        var scopedPaths = _config.GetScopedSavePaths();
+                        var repoScopedPaths = scopedPaths.Select(p => 
+                            Path.Combine(effectiveRepoPath, Path.GetFileName(p))).ToArray();
+                        
+                        await _gitService.CommitScopedChangesAsync(_config.GitRepositoryPath, commitMessage, repoScopedPaths, cancellationToken);
+                    }
+                    else
+                    {
+                        await _gitService.CommitChangesAsync(_config.GitRepositoryPath, commitMessage, cancellationToken);
+                    }
                     
                     if (!string.IsNullOrEmpty(_config.RemoteRepositoryUrl))
                     {
