@@ -59,6 +59,13 @@ namespace D2GitSync.Core
                 // Step 2: Initialize Git repository
                 await _gitService.InitializeRepositoryAsync(_config.GitRepositoryPath, cancellationToken);
                 
+                // Step 2.1: Update .gitignore for mod scoping to prevent affecting other mods
+                if (_config.EnableModScoping)
+                {
+                    var modUsesRetailLocation = _config.ModUsesRetailLocation();
+                    await _gitService.UpdateGitIgnoreForModAsync(_config.GitRepositoryPath, _config.CurrentModName, modUsesRetailLocation, cancellationToken);
+                }
+                
                 // Step 2.5: Set up symlinks FIRST to preserve local files (this is the magic!)
                 var effectiveRepoPath = _config.GetModRepositoryPath();
                 var scopedSavePaths = _config.GetScopedSavePaths();

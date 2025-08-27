@@ -98,6 +98,18 @@ namespace D2GitSync.Core
         }
 
         /// <summary>
+        /// Determines if the current mod uses the retail saves location instead of a mod-specific directory.
+        /// </summary>
+        public bool ModUsesRetailLocation()
+        {
+            if (!EnableModScoping || string.IsNullOrEmpty(CurrentModName))
+                return false;
+
+            var modSavePath = Path.Combine(SavesPath, "Mods", CurrentModName);
+            return !Directory.Exists(modSavePath);
+        }
+
+        /// <summary>
         /// Gets the git repository subdirectory for the current mod.
         /// </summary>
         public string GetModRepositoryPath()

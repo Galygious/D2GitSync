@@ -63,7 +63,7 @@ namespace D2GitSync.Core
             await ConfigureGitUserAsync(repoPath, cancellationToken);
 
             // Create initial gitignore
-            await CreateGitIgnoreAsync(repoPath, cancellationToken);
+            await CreateGitIgnoreAsync(repoPath, null, false, cancellationToken);
 
             // Create README
             await CreateReadmeAsync(repoPath, cancellationToken);
@@ -282,6 +282,17 @@ namespace D2GitSync.Core
         }
 
         /// <summary>
+        /// Updates the .gitignore file to scope syncing to a specific mod.
+        /// This prevents GitSync from affecting save files of other mods.
+        /// </summary>
+        public async Task UpdateGitIgnoreForModAsync(string repoPath, string currentModName, bool modUsesRetailLocation, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Updating .gitignore for mod scoping: {ModName} (retail location: {RetailLocation})", 
+                currentModName ?? "all mods", modUsesRetailLocation);
+            await CreateGitIgnoreAsync(repoPath, currentModName, modUsesRetailLocation, cancellationToken);
+        }
+
+        /// <summary>
         /// Configures a remote repository URL.
         /// </summary>
         public async Task ConfigureRemoteAsync(string repoPath, string remoteUrl, CancellationToken cancellationToken = default)
@@ -321,7 +332,7 @@ namespace D2GitSync.Core
             _logger.LogDebug("Configured Git user: {UserName} <{UserEmail}>", userName, userEmail);
         }
 
-        private async Task CreateGitIgnoreAsync(string repoPath, CancellationToken cancellationToken)
+        private async Task CreateGitIgnoreAsync(string repoPath, string currentModName, bool modUsesRetailLocation, CancellationToken cancellationToken)
         {
             var gitignorePath = Path.Combine(repoPath, ".gitignore");
             var gitignoreContent = @"# Temporary files
@@ -336,6 +347,40 @@ Thumbs.db
 # Log files
 *.log
 ";
+
+            // If mod scoping is enabled, ignore everything except the current mod
+            if (!string.IsNullOrEmpty(currentModName))
+            {
+                if (modUsesRetailLocation)
+                {
+                    // For mods that use retail location, we only track files in the root
+                    // but still want to ignore other potential mod directories
+                    gitignoreContent += $@"
+# Mod scoping - {currentModName} uses retail location
+# Ignore other mod directories to prevent affecting their save files
+Mods/
+mods/
+";
+                }
+                else
+                {
+                    // For mods with their own directory, ignore everything except that mod
+                    gitignoreContent += $@"
+# Mod scoping - ignore everything except current mod: {currentModName}
+# This prevents GitSync from affecting save files of other mods
+
+# Ignore all directories and files in root except essentials and current mod
+/*
+!.gitignore
+!README.md
+
+# Allow the specific mod directory
+!mods/
+mods/*
+!mods/{currentModName}/
+";
+                }
+            }
 
             await File.WriteAllTextAsync(gitignorePath, gitignoreContent, cancellationToken);
         }
