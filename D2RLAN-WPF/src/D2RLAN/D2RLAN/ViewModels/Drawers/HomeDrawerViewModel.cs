@@ -646,6 +646,7 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
         await ShellViewModel.ApplyModSettings();
         GetD2RArgs();
         await StashMigration();
+        await ShellViewModel.OnGameStartingAsync();
 
         ShellViewModel.DisableBNetConnection();
 
