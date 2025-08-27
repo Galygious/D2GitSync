@@ -4909,14 +4909,14 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                     {
                         SavesPath = GetSavesPath(),
                         GitRepositoryPath = Path.Combine(Path.GetTempPath(), "D2RSaveSync"),
-                        AutoSyncEnabled = false, // Start disabled until user configures
+                        D2GitSyncEnabled = false, // Start disabled until user configures
                         DebounceSeconds = 3
                     };
                     _logger.Info("Created default D2GitSync configuration");
                 }
                 
                 // Initialize with configuration if enabled
-                if (config.AutoSyncEnabled && !string.IsNullOrEmpty(config.RemoteRepositoryUrl))
+                if (config.D2GitSyncEnabled && !string.IsNullOrEmpty(config.RemoteRepositoryUrl))
                 {
                     await _syncIntegration.InitializeAsync(config);
                     _logger.Info("D2GitSync service initialized and enabled");
